@@ -57,7 +57,7 @@
           set runtimepath=$HOME/.vim,$VIM/vimfiles,$VIMRUNTIME,$VIM/vimfiles/after,$HOME/.vim/after
         endif
     " }
-    
+
     " Arrow Key Fix {
         " https://github.com/spf13/spf13-vim/issues/780
         if &term[:4] == "xterm" || &term[:5] == 'screen' || &term[:3] == 'rxvt'
@@ -126,7 +126,8 @@
     set viewoptions=folds,options,cursor,unix,slash " Better Unix / Windows compatibility
     set virtualedit=onemore             " Allow for cursor beyond last character
     set history=1000                    " Store a ton of history (default is 20)
-    set spell                           " Spell checking on
+    "set spell                          " Spell checking on
+    set nospell                         " No spell checking on
     set hidden                          " Allow buffer switching without saving
     set iskeyword-=.                    " '.' is an end of word designator
     set iskeyword-=#                    " '#' is an end of word designator
@@ -229,7 +230,8 @@
     set whichwrap=b,s,h,l,<,>,[,]   " Backspace and cursor keys wrap too
     set scrolljump=5                " Lines to scroll when cursor leaves screen
     set scrolloff=3                 " Minimum lines to keep above and below cursor
-    set foldenable                  " Auto fold code
+    "set foldenable                 " Auto fold code
+    set nofoldenable                " disable folding
     set list
     set listchars=tab:›\ ,trail:•,extends:#,nbsp:. " Highlight problematic whitespace
 
@@ -551,8 +553,7 @@
     " }
 
     " Ctags {
-        set tags=./tags;/,~/.vimtags
-
+        set tags=./tags;/,~/.vimtags,./.tags,./../.tags,./*/.tags,.tags,tags
         " Make tags placed in .git/tags file available in all levels of a repository
         let gitroot = substitute(system('git rev-parse --show-toplevel'), '[\n\r]', '', 'g')
         if gitroot != ''
@@ -574,14 +575,17 @@
 
     " NerdTree {
         if isdirectory(expand("~/.vim/bundle/nerdtree"))
+            let NERDTreeWinSize=20
+            nmap <Leader>nt :NERDTreeToggle<CR>
+
             map <C-e> <plug>NERDTreeTabsToggle<CR>
             map <leader>e :NERDTreeFind<CR>
-            nmap <leader>nt :NERDTreeFind<CR>
+            "nmap <leader>nt :NERDTreeFind<CR>
 
             let NERDTreeShowBookmarks=1
             let NERDTreeIgnore=['\.py[cd]$', '\~$', '\.swo$', '\.swp$', '^\.git$', '^\.hg$', '^\.svn$', '\.bzr$']
             let NERDTreeChDirMode=0
-            let NERDTreeQuitOnOpen=1
+            let NERDTreeQuitOnOpen=0
             let NERDTreeMouseMode=2
             let NERDTreeShowHidden=1
             let NERDTreeKeepTreeInNewTab=1
@@ -640,6 +644,10 @@
 
     " ctrlp {
         if isdirectory(expand("~/.vim/bundle/ctrlp.vim/"))
+            let g:ctrlp_map = '<c-e>'
+            let g:ctrlp_cmd = 'CtrlP'
+            let g:ctrlp_match_window = 'top,order:btt,min:1,max:5,results:20'
+
             let g:ctrlp_working_path_mode = 'ra'
             nnoremap <silent> <D-t> :CtrlP<CR>
             nnoremap <silent> <D-r> :CtrlPMRU<CR>
@@ -649,7 +657,7 @@
 
             if executable('ag')
                 let s:ctrlp_fallback = 'ag %s --nocolor -l -g ""'
-            elseif executable('ack-grep')
+            elseif sexecutable('ack-grep')
                 let s:ctrlp_fallback = 'ack-grep %s --nocolor -f'
             elseif executable('ack')
                 let s:ctrlp_fallback = 'ack %s --nocolor -f'
@@ -683,6 +691,17 @@
     " TagBar {
         if isdirectory(expand("~/.vim/bundle/tagbar/"))
             nnoremap <silent> <leader>tt :TagbarToggle<CR>
+            nmap <Leader>tb :TagbarToggle<CR>        "快捷键设置
+            let g:tagbar_ctags_bin='ctags'            "ctags程序的路径
+            let g:tagbar_width=30                    "窗口宽度的设置
+            "如果是c语言的程序的话，tagbar自动开启
+            autocmd BufReadPost *.cpp,*.c,*.h,*.hpp,*.cc,*.cxx,*.lua call tagbar#autoopen()
+
+            " -- ctags --
+            " map <ctrl>+F12 to generate ctags for current folder:
+            "map <C-F12> :!ctags -R --c++-kinds=+p --fields=+iaS --extra=+q .<CR><CR>
+            "map <C-F12> :!ctags -R .<CR><CR>
+            " add current directory's generated tags file to available tags
         endif
     "}
 
@@ -1063,6 +1082,11 @@
     " }
 
 
+    " vim-multiple-cursors {
+        " Use c-n to toggle
+        if isdirectory(expand("~/.vim/bundle/vim-multiple-cursors/"))
+        endif
+    "}
 
 " }
 
@@ -1070,7 +1094,12 @@
 
     " GVIM- (here instead of .gvimrc)
     if has('gui_running')
-        set guioptions-=T           " Remove the toolbar
+        set guioptions+=m " 隐藏菜单栏
+        set guioptions-=T " 隐藏工具栏
+        set guioptions-=L " 隐藏左侧滚动条
+        set guioptions-=r " 隐藏右侧滚动条
+        set guioptions-=b " 隐藏底部滚动条
+        set showtabline=0 " 隐藏Tab栏
         set lines=40                " 40 lines of text instead of 24
         if !exists("g:spf13_no_big_font")
             if LINUX() && has("gui_running")
@@ -1197,23 +1226,23 @@
         endfor
         return s:is_fork
     endfunction
-     
+
     function! s:ExpandFilenameAndExecute(command, file)
         execute a:command . " " . expand(a:file, ":p")
     endfunction
-     
+
     function! s:EditSpf13Config()
         call <SID>ExpandFilenameAndExecute("tabedit", "~/.vimrc")
         call <SID>ExpandFilenameAndExecute("vsplit", "~/.vimrc.before")
         call <SID>ExpandFilenameAndExecute("vsplit", "~/.vimrc.bundles")
-     
+
         execute bufwinnr(".vimrc") . "wincmd w"
         call <SID>ExpandFilenameAndExecute("split", "~/.vimrc.local")
         wincmd l
         call <SID>ExpandFilenameAndExecute("split", "~/.vimrc.before.local")
         wincmd l
         call <SID>ExpandFilenameAndExecute("split", "~/.vimrc.bundles.local")
-     
+
         if <SID>IsSpf13Fork()
             execute bufwinnr(".vimrc") . "wincmd w"
             call <SID>ExpandFilenameAndExecute("split", "~/.vimrc.fork")
@@ -1222,10 +1251,10 @@
             wincmd l
             call <SID>ExpandFilenameAndExecute("split", "~/.vimrc.bundles.fork")
         endif
-     
+
         execute bufwinnr(".vimrc.local") . "wincmd w"
     endfunction
-     
+
     execute "noremap " . s:spf13_edit_config_mapping " :call <SID>EditSpf13Config()<CR>"
     execute "noremap " . s:spf13_apply_config_mapping . " :source ~/.vimrc<CR>"
 " }
@@ -1249,3 +1278,100 @@
         endif
     endif
 " }
+
+
+
+set t_Co=256
+set background=dark
+colorscheme molokai
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"=>My Setting
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"my key map
+"map <alt>+/ to auto complete
+imap <A-/> <C-n>
+"ctrl-m 同时关闭或者打开nerdtree和taglist,实现编辑界面全屏
+map <c-m> :NERDTreeToggle<CR>:TagbarToggle<CR>
+map <F3> <C-]>
+map <A-Left> <C-O>
+map <A-Right> <C-I>
+
+"To support the copy, cut and paste operation like windows
+source $VIMRUNTIME/mswin.vim
+behave mswin
+
+"set the Courier_New font
+if has("win32")
+    set guifont=Courier_New:h12:cANSI
+    "set guifontwide=YaHei\ Consolas \ Courier_New\ Hybrid:h10
+    au GUIEnter * simalt ~x "max the window
+elseif has("unix")
+    set guifont=
+    set guifontwide=
+elseif has("mac") || has("macunix")
+    set guifont=
+    set guifontwide=
+endif
+
+set nocp
+
+"显示行宽提示线80
+set colorcolumn=81
+hi ColorColumn  guibg=#666666
+
+"当转到其它应用时，自动保存
+au FocusLost * silent! up
+
+"界面显示不下时，行不自动分行显示
+set nowrap
+
+"高亮显示当前行
+set cursorline
+
+"自动删除行尾空白
+autocmd BufWritePre *.c,*.cpp,*.h,*.java,*.lua,*.py %s/\s\+$//e
+
+"文件夹管理
+"Bundle 'scrooloose/nerdtree'
+"let NERDTreeWinSize=20
+"nmap <Leader>nt :NERDTreeToggle<CR>
+
+
+"在最上面显示打开的文件列表
+"Bundle 'fholgado/minibufexpl.vim'
+let g:miniBufExplSplitBelow = 0
+let g:miniBufExplMapWindowNavVim = 1
+let g:miniBufExplMapWindowNavArrows = 1
+let g:miniBufExplMapCTabSwitchBufs = 1
+let g:miniBufExplModSelTarget = 1
+let g:miniBufExplUseSingleClick = 1
+map <silent> <C-pageup> :bp<CR>
+map <silent> <C-pagedown> :bn<CR>
+map <silent> <C-w> :bd<CR>
+
+"各种语言注释,使用,/
+"Bundle 'scrooloose/nerdcommenter'
+map <leader>/ <leader>c<space>
+
+"文件间查找,安装ag.exe,使用:Ag
+"Bundle 'rking/ag.vim'
+"let g:ackprg = 'ag --nogroup --nocolor --column'
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Files and backup
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"Turn backup off
+set nobackup
+set nowb
+set noswapfile
+
+"Set to auto read when a file is changed from the outside
+if exists("&autoread")
+    set autoread
+endif
+
+map <C-j> <C-W>j
+map <C-k> <C-W>k
+map <C-h> <C-W>h
+map <C-l> <C-W>l
